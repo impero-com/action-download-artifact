@@ -5,6 +5,19 @@ const filesize = require('filesize')
 const pathname = require('path')
 const fs = require('fs')
 
+function getInputNumber(name, option) {
+    let value = core.getInput(name, option);
+    if (value) {
+        let num = Number(value);
+        if (Number.isNaN(num)) {
+            return undefined;
+        }
+        return num;
+    } else {
+        return undefined;
+    }
+}
+
 async function main() {
     try {
         const token = core.getInput("github_token", { required: true })
@@ -13,12 +26,12 @@ async function main() {
         const path = core.getInput("path", { required: true })
         const name = core.getInput("name")
         let workflowConclusion = core.getInput("workflow_conclusion")
-        let pr = core.getInput("pr")
+        let pr = getInputNumber("pr")
         let commit = core.getInput("commit")
         let branch = core.getInput("branch")
         let event = core.getInput("event")
-        let runID = core.getInput("run_id")
-        let runNumber = core.getInput("run_number")
+        let runID = getInputNumber("run_id")
+        let runNumber = Number(core.getInput("run_number"))
         let checkArtifacts = core.getInput("check_artifacts")
         let searchArtifacts = core.getInput("search_artifacts")
 
@@ -33,7 +46,7 @@ async function main() {
         if (pr) {
             console.log("==> PR:", pr)
 
-            const pull = await client.pulls.get({
+            const pull = await client.rest.pulls.get({
                 owner: owner,
                 repo: repo,
                 pull_number: pr,
@@ -60,7 +73,7 @@ async function main() {
         }
 
         if (!runID) {
-            for await (const runs of client.paginate.iterator(client.actions.listWorkflowRuns, {
+            for await (const runs of client.paginate.iterator(client.rest.actions.listWorkflowRuns, {
                 owner: owner,
                 repo: repo,
                 workflow_id: workflow,
@@ -79,7 +92,7 @@ async function main() {
                         continue
                     }
                     if (checkArtifacts || searchArtifacts) {
-                        let artifacts = await client.actions.listWorkflowRunArtifacts({
+                        let artifacts = await client.rest.actions.listWorkflowRunArtifacts({
                             owner: owner,
                             repo: repo,
                             run_id: run.id,
@@ -111,7 +124,7 @@ async function main() {
             throw new Error("no matching workflow run found")
         }
 
-        let artifacts = await client.paginate(client.actions.listWorkflowRunArtifacts, {
+        let artifacts = await client.paginate(client.rest.actions.listWorkflowRunArtifacts, {
             owner: owner,
             repo: repo,
             run_id: runID,
@@ -134,7 +147,7 @@ async function main() {
 
             console.log(`==> Downloading: ${artifact.name}.zip (${size})`)
 
-            const zip = await client.actions.downloadArtifact({
+            const zip = await client.rest.actions.downloadArtifact({
                 owner: owner,
                 repo: repo,
                 artifact_id: artifact.id,
