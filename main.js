@@ -77,11 +77,19 @@ async function main() {
                 owner: owner,
                 repo: repo,
                 workflow_id: workflow,
-                branch: branch,
-                event: event,
+
+                // https://github.com/dawidd6/action-download-artifact/issues/147#issuecomment-1096685055
+                // branch: branch,
+                // event: event,
             }
             )) {
                 for (const run of runs.data) {
+                    if (branch && run.head_branch != branch) {
+                        continue;
+                    }
+                    if (event && run.event != event) {
+                        continue;
+                    }
                     if (commit && run.head_sha != commit) {
                         continue
                     }
